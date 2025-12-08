@@ -1,0 +1,17 @@
+export const TEXT = {
+  appTitle: 'Financial Bot',
+  initialMessage: 'Soy el Financial Bot, ¿en qué puedo ayudarte?',
+  inputPlaceholder: 'Escribe tu mensaje o pega un prompt...',
+  actionCardsTitle: 'Action Cards',
+  quickAutomationsTitle: 'Quick Automations',
+  selectPlaceholder: 'Selecciona',
+  manualInputLabel: 'Introduce un valor',
+  runLabel: 'Run',
+  runSuccess: 'Ejecutado',
+  dropzoneTitle: 'Arrastra tu documento',
+  dropzoneHint: 'PDF, TXT, Excel o formato que desees analizar',
+  dropzoneCta: 'o haz clic para seleccionar',
+  copyLabel: 'Copiar',
+  copySuccess: 'Copiado',
+  typingLabel: 'Escribiendo',
+};
