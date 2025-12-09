@@ -1,6 +1,44 @@
 import { useMemo, useState } from 'react';
 import { TEXT } from '../config/content.js';
 
+const escapeHtml = (text) =>
+  text
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;')
+    .replace(/'/g, '&#39;');
+
+const markdownToHtml = (text) => {
+  if (!text) return '';
+  let html = escapeHtml(text);
+  html = html.replace(/^###### (.*)$/gm, '<strong>$1</strong>');
+  html = html.replace(/^##### (.*)$/gm, '<strong>$1</strong>');
+  html = html.replace(/^#### (.*)$/gm, '<strong>$1</strong>');
+  html = html.replace(/^### (.*)$/gm, '<strong>$1</strong>');
+  html = html.replace(/^## (.*)$/gm, '<strong>$1</strong>');
+  html = html.replace(/^# (.*)$/gm, '<strong>$1</strong>');
+  html = html.replace(/\*\*(.+?)\*\*/g, '<strong>$1</strong>');
+  html = html.replace(/__(.+?)__/g, '<strong>$1</strong>');
+  html = html.replace(/`(.+?)`/g, '<code>$1</code>');
+  html = html.replace(/(?<!\!)\[(.+?)\]\((https?:\/\/[^\s)]+)\)/g, '<a href="$2" target="_blank" rel="noopener noreferrer">$1</a>');
+  html = html.replace(/(?:^|\n)\s*[-*]\s+(.*)/g, (match, item) => `<br>• ${item}`);
+  html = html.replace(/\n{2,}/g, '<br><br>');
+  html = html.replace(/\n/g, '<br>');
+  return html;
+};
+
+const normalizeMediaUrl = (value) => {
+  if (!value) return '';
+  if (value.startsWith('http://') || value.startsWith('https://') || value.startsWith('data:')) return value;
+  if (value.startsWith('file://')) return value;
+  if (/^[a-zA-Z]:\\/.test(value)) {
+    const normalized = value.replace(/\\/g, '/');
+    return `file:///${normalized.replace(/^\/+/, '')}`;
+  }
+  return value.replace(/\\/g, '/');
+};
+
 function ChatMessage({ role, content, blocks, meta, isHighlighted, isStreaming }) {
   const isUser = role === 'user';
   const [copied, setCopied] = useState(false);
@@ -22,11 +60,11 @@ function ChatMessage({ role, content, blocks, meta, isHighlighted, isStreaming }
     return (
       <div className="message__blocks">
         {blocks.map((block, idx) => {
+          if (!block?.value) return null;
           if (block.type === 'image') {
             return (
               <div key={`${block.type}-${idx}`} className="message-block message-block--image">
-                <span className="message-block__label">{block.label}</span>
-                <img src={block.value} alt={block.label || 'Imagen de la API'} loading="lazy" />
+                <img src={normalizeMediaUrl(block.value)} alt={block.label || 'Imagen de la API'} loading="lazy" />
               </div>
             );
           }
@@ -34,15 +72,14 @@ function ChatMessage({ role, content, blocks, meta, isHighlighted, isStreaming }
           if (block.type === 'file') {
             return (
               <div key={`${block.type}-${idx}`} className="message-block message-block--file">
-                <span className="message-block__label">{block.label}</span>
                 <a
                   className="file-pill file-pill--block"
-                  href={block.value}
+                  href={normalizeMediaUrl(block.value)}
                   target="_blank"
                   rel="noopener noreferrer"
                 >
                   <span className="file-pill__icon" aria-hidden>
-                    FILE
+                    ⬇
                   </span>
                   <span className="file-pill__name">{block.label || 'Descargar archivo'}</span>
                 </a>
@@ -52,8 +89,7 @@ function ChatMessage({ role, content, blocks, meta, isHighlighted, isStreaming }
 
           return (
             <div key={`${block.type}-${idx}`} className="message-block message-block--text">
-              <span className="message-block__label">{block.label}</span>
-              <div className="message-block__text">{block.value}</div>
+              <div className="message-block__text" dangerouslySetInnerHTML={{ __html: markdownToHtml(block.value) }} />
             </div>
           );
         })}
@@ -64,13 +100,7 @@ function ChatMessage({ role, content, blocks, meta, isHighlighted, isStreaming }
   const copyText = useMemo(() => {
     if (content) return content;
     if (blocks && blocks.length > 0) {
-      const lines = blocks.map((block) => `${block.label || block.type}: ${block.value}`);
-      if (meta?.url) {
-        lines.push(`Endpoint: ${meta.url}`);
-      }
-      if (meta?.params && Object.keys(meta.params).length > 0) {
-        lines.push(`Parámetros: ${JSON.stringify(meta.params)}`);
-      }
+      const lines = blocks.map((block) => block.value);
       return lines.join('\n');
     }
     return '';
@@ -111,14 +141,6 @@ function ChatMessage({ role, content, blocks, meta, isHighlighted, isStreaming }
           </p>
         )}
         {renderBlocks()}
-        {meta && (meta.url || (meta.params && Object.keys(meta.params).length > 0)) && (
-          <div className="message__meta">
-            {meta.url && <span className="meta-pill">Endpoint: {meta.url}</span>}
-            {meta.params && Object.keys(meta.params).length > 0 && (
-              <span className="meta-pill">Parámetros: {JSON.stringify(meta.params)}</span>
-            )}
-          </div>
-        )}
         {!isUser && (
           <div className="message__actions">
             <button className={`ghost tiny ${copied ? 'copied' : ''}`} type="button" onClick={handleCopy}>

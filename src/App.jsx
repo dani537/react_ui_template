@@ -192,8 +192,7 @@ export default function App() {
     );
 
     try {
-      const { payload, url, params } = await runActionRequest(option.request, { inputValue: cleanInput });
-      const paramText = params && Object.keys(params).length > 0 ? JSON.stringify(params) : '';
+      const { payload } = await runActionRequest(option.request, { inputValue: cleanInput });
       const blocks = buildBlocksFromPayload(payload);
 
       const assistantMessage =
@@ -201,15 +200,13 @@ export default function App() {
           ? {
               id: assistantId,
               role: 'assistant',
-              content: `Respuesta de FastAPI para "${readablePath}":`,
+              content: null,
               blocks,
-              meta: { url, params },
             }
           : {
               id: assistantId,
               role: 'assistant',
-              content: `Respuesta de FastAPI para "${readablePath}":\n${formatApiPayload(payload)}${paramText ? `\nParámetros: ${paramText}` : ''}\nEndpoint: ${url}`,
-              meta: { url, params },
+              content: formatApiPayload(payload),
             };
 
       setConversations((prev) =>
