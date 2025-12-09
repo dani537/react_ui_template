@@ -36,6 +36,7 @@ export async function runActionRequest(requestConfig, { inputValue } = {}) {
 
   const headers = {
     ...(requestConfig.headers || {}),
+    Accept: 'application/json, text/plain;q=0.9, */*;q=0.8',
   };
 
   const fetchPromise = fetch(urlObj.toString(), { method, headers });
