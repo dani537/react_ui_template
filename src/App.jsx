@@ -33,6 +33,43 @@ const generateAssistantReply = (prompt) => {
   return `Recibido: "${prompt.slice(0, 90)}". ${hook}`;
 };
 
+const buildBlocksFromPayload = (payload) => {
+  const blocks = [];
+
+  const walk = (node) => {
+    if (!node) return;
+    if (Array.isArray(node)) {
+      node.forEach((item) => walk(item));
+      return;
+    }
+    if (typeof node !== 'object') return;
+
+    Object.entries(node).forEach(([key, value]) => {
+      const lowerKey = key.toLowerCase();
+      if (typeof value === 'string') {
+        if (lowerKey.startsWith('text')) {
+          blocks.push({ type: 'text', label: key, value });
+          return;
+        }
+        if (lowerKey.startsWith('image')) {
+          blocks.push({ type: 'image', label: key, value });
+          return;
+        }
+        if (lowerKey.startsWith('file')) {
+          blocks.push({ type: 'file', label: key, value });
+          return;
+        }
+      }
+      if (value && typeof value === 'object') {
+        walk(value);
+      }
+    });
+  };
+
+  walk(payload);
+  return blocks;
+};
+
 export default function App() {
   const [conversations, setConversations] = useState(seedConversations);
   const [activeId, setActiveId] = useState(seedConversations[0].id);
@@ -156,12 +193,24 @@ export default function App() {
 
     try {
       const { payload, url, params } = await runActionRequest(option.request, { inputValue: cleanInput });
-      const paramText = params && Object.keys(params).length > 0 ? `\nParámetros: ${JSON.stringify(params)}` : '';
-      const assistantMessage = {
-        id: assistantId,
-        role: 'assistant',
-        content: `Respuesta de FastAPI para "${readablePath}":\n${formatApiPayload(payload)}${paramText ? `\n${paramText}` : ''}\nEndpoint: ${url}`,
-      };
+      const paramText = params && Object.keys(params).length > 0 ? JSON.stringify(params) : '';
+      const blocks = buildBlocksFromPayload(payload);
+
+      const assistantMessage =
+        blocks.length > 0
+          ? {
+              id: assistantId,
+              role: 'assistant',
+              content: `Respuesta de FastAPI para "${readablePath}":`,
+              blocks,
+              meta: { url, params },
+            }
+          : {
+              id: assistantId,
+              role: 'assistant',
+              content: `Respuesta de FastAPI para "${readablePath}":\n${formatApiPayload(payload)}${paramText ? `\nParámetros: ${paramText}` : ''}\nEndpoint: ${url}`,
+              meta: { url, params },
+            };
 
       setConversations((prev) =>
         prev.map((conversation) =>

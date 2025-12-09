@@ -17,4 +17,4 @@ const normalizeBaseUrl = (raw) => {
 export const API_BASE_URL = normalizeBaseUrl(import.meta.env.VITE_API_BASE_URL);
 
 // Timeout genérico para peticiones críticas; editable según entorno.
-export const DEFAULT_TIMEOUT_MS = 20000;
+export const DEFAULT_TIMEOUT_MS = 300000;

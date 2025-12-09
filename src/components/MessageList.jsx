@@ -1,9 +1,10 @@
 import { useMemo, useState } from 'react';
 import { TEXT } from '../config/content.js';
 
-function ChatMessage({ role, content, isHighlighted, isStreaming }) {
+function ChatMessage({ role, content, blocks, meta, isHighlighted, isStreaming }) {
   const isUser = role === 'user';
   const [copied, setCopied] = useState(false);
+  const hasContent = content !== undefined && content !== null;
 
   const confettiPieces = useMemo(
     () =>
@@ -15,13 +16,73 @@ function ChatMessage({ role, content, isHighlighted, isStreaming }) {
     [],
   );
 
+  const renderBlocks = () => {
+    if (!blocks || blocks.length === 0) return null;
+
+    return (
+      <div className="message__blocks">
+        {blocks.map((block, idx) => {
+          if (block.type === 'image') {
+            return (
+              <div key={`${block.type}-${idx}`} className="message-block message-block--image">
+                <span className="message-block__label">{block.label}</span>
+                <img src={block.value} alt={block.label || 'Imagen de la API'} loading="lazy" />
+              </div>
+            );
+          }
+
+          if (block.type === 'file') {
+            return (
+              <div key={`${block.type}-${idx}`} className="message-block message-block--file">
+                <span className="message-block__label">{block.label}</span>
+                <a
+                  className="file-pill file-pill--block"
+                  href={block.value}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                >
+                  <span className="file-pill__icon" aria-hidden>
+                    FILE
+                  </span>
+                  <span className="file-pill__name">{block.label || 'Descargar archivo'}</span>
+                </a>
+              </div>
+            );
+          }
+
+          return (
+            <div key={`${block.type}-${idx}`} className="message-block message-block--text">
+              <span className="message-block__label">{block.label}</span>
+              <div className="message-block__text">{block.value}</div>
+            </div>
+          );
+        })}
+      </div>
+    );
+  };
+
+  const copyText = useMemo(() => {
+    if (content) return content;
+    if (blocks && blocks.length > 0) {
+      const lines = blocks.map((block) => `${block.label || block.type}: ${block.value}`);
+      if (meta?.url) {
+        lines.push(`Endpoint: ${meta.url}`);
+      }
+      if (meta?.params && Object.keys(meta.params).length > 0) {
+        lines.push(`Parámetros: ${JSON.stringify(meta.params)}`);
+      }
+      return lines.join('\n');
+    }
+    return '';
+  }, [blocks, content, meta?.params, meta?.url]);
+
   const handleCopy = async () => {
     try {
       if (navigator?.clipboard?.writeText) {
-        await navigator.clipboard.writeText(content);
+        await navigator.clipboard.writeText(copyText);
       } else {
         const temp = document.createElement('textarea');
-        temp.value = content;
+        temp.value = copyText;
         document.body.appendChild(temp);
         temp.select();
         document.execCommand('copy');
@@ -43,10 +104,21 @@ function ChatMessage({ role, content, isHighlighted, isStreaming }) {
         {isUser ? 'Tú' : 'AI'}
       </div>
       <div className="message__body">
-        <p className="message__content">
-          {content}
-          {isStreaming && <span className="cursor" />}
-        </p>
+        {hasContent && (
+          <p className="message__content">
+            <span className="message__text">{content}</span>
+            {isStreaming && <span className="cursor" />}
+          </p>
+        )}
+        {renderBlocks()}
+        {meta && (meta.url || (meta.params && Object.keys(meta.params).length > 0)) && (
+          <div className="message__meta">
+            {meta.url && <span className="meta-pill">Endpoint: {meta.url}</span>}
+            {meta.params && Object.keys(meta.params).length > 0 && (
+              <span className="meta-pill">Parámetros: {JSON.stringify(meta.params)}</span>
+            )}
+          </div>
+        )}
         {!isUser && (
           <div className="message__actions">
             <button className={`ghost tiny ${copied ? 'copied' : ''}`} type="button" onClick={handleCopy}>
@@ -68,6 +140,8 @@ export default function MessageList({ messages, isThinking, highlightId, spinner
             key={message.id}
             role={message.role}
             content={message.content}
+            blocks={message.blocks}
+            meta={message.meta}
             isHighlighted={message.id === highlightId}
             isStreaming={Boolean(message.isStreaming)}
           />
