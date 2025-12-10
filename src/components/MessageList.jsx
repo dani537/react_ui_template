@@ -86,7 +86,6 @@ function ChatMessage({ role, content, blocks, meta, isHighlighted, isStreaming }
                     event.currentTarget.style.display = 'none';
                   }}
                 />
-                <div className="image-url-hint">URL: {normalizeMediaUrl(block.value)}</div>
               </div>
             );
           }
@@ -191,9 +190,7 @@ export default function MessageList({ messages, isThinking, highlightId, spinner
         ))}
         {isThinking && (
           <div className="message from-assistant ghosted spinner-block">
-            <div className="avatar avatar-ai thinking">
-              <span className="progress-ring" aria-hidden />AI
-            </div>
+            <div className="avatar avatar-ai thinking">AI</div>
             <div className="message__body">
               <div className="typing">
                 <span />
