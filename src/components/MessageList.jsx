@@ -12,17 +12,28 @@ const escapeHtml = (text) =>
 const markdownToHtml = (text) => {
   if (!text) return '';
   let html = escapeHtml(text);
-  html = html.replace(/^###### (.*)$/gm, '<strong>$1</strong>');
-  html = html.replace(/^##### (.*)$/gm, '<strong>$1</strong>');
-  html = html.replace(/^#### (.*)$/gm, '<strong>$1</strong>');
-  html = html.replace(/^### (.*)$/gm, '<strong>$1</strong>');
-  html = html.replace(/^## (.*)$/gm, '<strong>$1</strong>');
-  html = html.replace(/^# (.*)$/gm, '<strong>$1</strong>');
+  html = html.replace(/^######\s+(.*)$/gim, '<h6>$1</h6>');
+  html = html.replace(/^#####\s+(.*)$/gim, '<h5>$1</h5>');
+  html = html.replace(/^####\s+(.*)$/gim, '<h4>$1</h4>');
+  html = html.replace(/^###\s+(.*)$/gim, '<h3>$1</h3>');
+  html = html.replace(/^##\s+(.*)$/gim, '<h2>$1</h2>');
+  html = html.replace(/^#\s+(.*)$/gim, '<h2>$1</h2>');
   html = html.replace(/\*\*(.+?)\*\*/g, '<strong>$1</strong>');
   html = html.replace(/__(.+?)__/g, '<strong>$1</strong>');
+  html = html.replace(/(?<!\*)\*(?!\*)([^*\n]+)(?<!\*)\*/g, '<em>$1</em>');
+  html = html.replace(/_([^_\n]+)_/g, '<em>$1</em>');
   html = html.replace(/`(.+?)`/g, '<code>$1</code>');
   html = html.replace(/(?<!\!)\[(.+?)\]\((https?:\/\/[^\s)]+)\)/g, '<a href="$2" target="_blank" rel="noopener noreferrer">$1</a>');
-  html = html.replace(/(?:^|\n)\s*[-*]\s+(.*)/g, (match, item) => `<br>• ${item}`);
+  html = html.replace(/(?:^|\n)((?:[-*]\s+.*(?:\n|$))+)/g, (match, list) => {
+    const items = list
+      .trim()
+      .split(/\n/)
+      .map((line) => line.replace(/^[-*]\s+/, '').trim())
+      .filter(Boolean)
+      .map((item) => `<li>${item}</li>`)
+      .join('');
+    return `<ul>${items}</ul>`;
+  });
   html = html.replace(/\n{2,}/g, '<br><br>');
   html = html.replace(/\n/g, '<br>');
   return html;
@@ -30,13 +41,13 @@ const markdownToHtml = (text) => {
 
 const normalizeMediaUrl = (value) => {
   if (!value) return '';
-  if (value.startsWith('http://') || value.startsWith('https://') || value.startsWith('data:')) return value;
-  if (value.startsWith('file://')) return value;
+  if (value.startsWith('http://') || value.startsWith('https://') || value.startsWith('data:')) return encodeURI(value);
+  if (value.startsWith('file://')) return encodeURI(value);
   if (/^[a-zA-Z]:\\/.test(value)) {
     const normalized = value.replace(/\\/g, '/');
-    return `file:///${normalized.replace(/^\/+/, '')}`;
+    return `file:///${encodeURI(normalized.replace(/^\/+/, ''))}`;
   }
-  return value.replace(/\\/g, '/');
+  return encodeURI(value.replace(/\\/g, '/'));
 };
 
 function ChatMessage({ role, content, blocks, meta, isHighlighted, isStreaming }) {
@@ -64,7 +75,22 @@ function ChatMessage({ role, content, blocks, meta, isHighlighted, isStreaming }
           if (block.type === 'image') {
             return (
               <div key={`${block.type}-${idx}`} className="message-block message-block--image">
-                <img src={normalizeMediaUrl(block.value)} alt={block.label || 'Imagen de la API'} loading="lazy" />
+                <img
+                  src={normalizeMediaUrl(block.value)}
+                  alt={block.label || 'Imagen de la API'}
+                  loading="lazy"
+                  onError={(event) => {
+                    event.currentTarget.style.display = 'none';
+                  }}
+                />
+                <a
+                  className="image-link"
+                  href={normalizeMediaUrl(block.value)}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                >
+                  Abrir imagen
+                </a>
               </div>
             );
           }
@@ -136,7 +162,7 @@ function ChatMessage({ role, content, blocks, meta, isHighlighted, isStreaming }
       <div className="message__body">
         {hasContent && (
           <p className="message__content">
-            <span className="message__text">{content}</span>
+            <span className="message__text" dangerouslySetInnerHTML={{ __html: markdownToHtml(content) }} />
             {isStreaming && <span className="cursor" />}
           </p>
         )}
