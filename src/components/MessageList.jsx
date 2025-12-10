@@ -1,5 +1,6 @@
 import { useMemo, useState } from 'react';
 import { TEXT } from '../config/content.js';
+import { API_BASE_URL } from '../config/api.js';
 
 const escapeHtml = (text) =>
   text
@@ -11,13 +12,14 @@ const escapeHtml = (text) =>
 
 const markdownToHtml = (text) => {
   if (!text) return '';
-  let html = escapeHtml(text);
-  html = html.replace(/^######\s+(.*)$/gim, '<h6>$1</h6>');
-  html = html.replace(/^#####\s+(.*)$/gim, '<h5>$1</h5>');
-  html = html.replace(/^####\s+(.*)$/gim, '<h4>$1</h4>');
-  html = html.replace(/^###\s+(.*)$/gim, '<h3>$1</h3>');
-  html = html.replace(/^##\s+(.*)$/gim, '<h2>$1</h2>');
-  html = html.replace(/^#\s+(.*)$/gim, '<h2>$1</h2>');
+  const normalized = text.replace(/\r\n?/g, '\n');
+  let html = escapeHtml(normalized);
+  html = html.replace(/^\s{0,3}######\s+(.+)$/gm, '<h6>$1</h6>');
+  html = html.replace(/^\s{0,3}#####\s+(.+)$/gm, '<h5>$1</h5>');
+  html = html.replace(/^\s{0,3}####\s+(.+)$/gm, '<h4>$1</h4>');
+  html = html.replace(/^\s{0,3}###\s+(.+)$/gm, '<h3>$1</h3>');
+  html = html.replace(/^\s{0,3}##\s+(.+)$/gm, '<h2>$1</h2>');
+  html = html.replace(/^\s{0,3}#\s+(.+)$/gm, '<h2>$1</h2>');
   html = html.replace(/\*\*(.+?)\*\*/g, '<strong>$1</strong>');
   html = html.replace(/__(.+?)__/g, '<strong>$1</strong>');
   html = html.replace(/(?<!\*)\*(?!\*)([^*\n]+)(?<!\*)\*/g, '<em>$1</em>');
@@ -43,11 +45,12 @@ const normalizeMediaUrl = (value) => {
   if (!value) return '';
   if (value.startsWith('http://') || value.startsWith('https://') || value.startsWith('data:')) return encodeURI(value);
   if (value.startsWith('file://')) return encodeURI(value);
+  if (value.startsWith('/')) return `${API_BASE_URL}${encodeURI(value)}`;
   if (/^[a-zA-Z]:\\/.test(value)) {
     const normalized = value.replace(/\\/g, '/');
     return `file:///${encodeURI(normalized.replace(/^\/+/, ''))}`;
   }
-  return encodeURI(value.replace(/\\/g, '/'));
+  return `${API_BASE_URL}/${encodeURI(value.replace(/\\/g, '/'))}`;
 };
 
 function ChatMessage({ role, content, blocks, meta, isHighlighted, isStreaming }) {
@@ -83,14 +86,7 @@ function ChatMessage({ role, content, blocks, meta, isHighlighted, isStreaming }
                     event.currentTarget.style.display = 'none';
                   }}
                 />
-                <a
-                  className="image-link"
-                  href={normalizeMediaUrl(block.value)}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                >
-                  Abrir imagen
-                </a>
+                <div className="image-url-hint">URL: {normalizeMediaUrl(block.value)}</div>
               </div>
             );
           }
@@ -101,8 +97,7 @@ function ChatMessage({ role, content, blocks, meta, isHighlighted, isStreaming }
                 <a
                   className="file-pill file-pill--block"
                   href={normalizeMediaUrl(block.value)}
-                  target="_blank"
-                  rel="noopener noreferrer"
+                  target="_self"
                 >
                   <span className="file-pill__icon" aria-hidden>
                     ⬇

@@ -1,6 +1,6 @@
 import { TEXT } from '../config/content.js';
 
-export default function MessageInput({ value, onChange, onSend, disabled }) {
+export default function MessageInput({ value, onChange, onSend, onClear, disabled }) {
   const handleSubmit = (event) => {
     event.preventDefault();
     onSend();
@@ -24,9 +24,14 @@ export default function MessageInput({ value, onChange, onSend, disabled }) {
           rows={2}
           disabled={disabled}
         />
-        <button type="submit" className="primary" disabled={disabled}>
-          Enviar
-        </button>
+        <div className="input-actions">
+          <button type="button" className="ghost" onClick={onClear} disabled={disabled}>
+            {TEXT.clearLabel}
+          </button>
+          <button type="submit" className="primary" disabled={disabled}>
+            Enviar
+          </button>
+        </div>
       </div>
       <p className="muted tiny">Enter para enviar, Shift+Enter para salto de linea.</p>
     </form>

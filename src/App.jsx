@@ -267,6 +267,28 @@ export default function App() {
 
   const pageStyle = { '--sidebar-width': `${sidebarWidth}px` };
 
+  const handleClearConversation = () => {
+    setConversations((prev) =>
+      prev.map((conversation) =>
+        conversation.id === activeId
+          ? {
+              ...conversation,
+              messages: [
+                {
+                  id: crypto.randomUUID(),
+                  role: 'assistant',
+                  content: TEXT.initialMessage,
+                },
+              ],
+            }
+          : conversation,
+      ),
+    );
+    setHighlightId(null);
+    setInput('');
+    setIsThinking(false);
+  };
+
   return (
     <div className="page" style={pageStyle}>
       <div className="sidebar-wrapper">
@@ -288,7 +310,13 @@ export default function App() {
           />
         </main>
 
-        <MessageInput value={input} onChange={setInput} onSend={handleSend} disabled={isThinking} />
+        <MessageInput
+          value={input}
+          onChange={setInput}
+          onSend={handleSend}
+          onClear={handleClearConversation}
+          disabled={isThinking}
+        />
       </div>
     </div>
   );

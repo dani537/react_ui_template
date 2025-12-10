@@ -14,4 +14,5 @@ export const TEXT = {
   copyLabel: 'Copiar',
   copySuccess: 'Copiado',
   typingLabel: 'Escribiendo',
+  clearLabel: 'Limpiar chat',
 };
