@@ -5,6 +5,7 @@ import MessageInput from './components/MessageInput.jsx';
 import { TEXT } from './config/content.js';
 import { SPINNER_MESSAGES } from './config/spinnerMessages.js';
 import { formatApiPayload, runActionRequest } from './services/actionApi.js';
+import { DEFAULT_TIMEOUT_MS } from './config/api.js';
 
 const seedConversations = [
   {
@@ -236,13 +237,22 @@ export default function App() {
     }
   };
 
-  const rotateSpinnerHints = (durationMs = 20000) => {
-    let idx = 0;
-    setSpinnerHint(SPINNER_MESSAGES[idx]);
+  const rotateSpinnerHints = (durationMs = DEFAULT_TIMEOUT_MS) => {
+    if (!Array.isArray(SPINNER_MESSAGES) || SPINNER_MESSAGES.length === 0) return;
+    const pickRandom = (exclude) => {
+      const pool = SPINNER_MESSAGES.filter((msg) => msg !== exclude);
+      if (pool.length === 0) return exclude ?? SPINNER_MESSAGES[0];
+      return pool[Math.floor(Math.random() * pool.length)];
+    };
+
+    let current = pickRandom();
+    setSpinnerHint(current);
+
     const interval = setInterval(() => {
-      idx = (idx + 1) % SPINNER_MESSAGES.length;
-      setSpinnerHint(SPINNER_MESSAGES[idx]);
+      current = pickRandom(current);
+      setSpinnerHint(current);
     }, 5000);
+
     setTimeout(() => clearInterval(interval), durationMs);
   };
 
