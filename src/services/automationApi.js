@@ -43,3 +43,24 @@ export async function uploadAutomationFiles(files, { optionId, uploadPath = '/v1
 
   return { payload, status: response.status };
 }
+
+export async function runAutomation(payload, { path = '/v1/automations/run' } = {}) {
+  if (!payload) throw new Error('No hay payload para lanzar la automatización.');
+
+  const fetchPromise = fetch(joinUrl(path), {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(payload),
+  });
+
+  const response = await withTimeout(fetchPromise, DEFAULT_TIMEOUT_MS);
+  const contentType = response.headers.get('content-type') || '';
+  const result = contentType.includes('application/json') ? await response.json() : await response.text();
+
+  if (!response.ok) {
+    const detail = typeof result === 'string' ? result : JSON.stringify(result);
+    throw new Error(`Fallo al lanzar la automatización (${response.status}): ${detail}`);
+  }
+
+  return { payload: result, status: response.status };
+}

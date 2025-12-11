@@ -1,7 +1,7 @@
 import { useMemo, useState } from 'react';
 import { actionTree, quickAutomationOptions } from '../config/options.js';
 import { TEXT } from '../config/content.js';
-import { uploadAutomationFiles } from '../services/automationApi.js';
+import { runAutomation, uploadAutomationFiles } from '../services/automationApi.js';
 
 function OptionList({ options, onSelect, selectedId, level, isOpen, onToggle }) {
   const selectedLabel = selectedId ? options.find((o) => o.id === selectedId)?.label : TEXT.selectPlaceholder;
@@ -85,21 +85,33 @@ export default function Sidebar({ onActionRun }) {
     setAutomationFiles((prev) => [...prev, ...incoming]);
   };
 
-  const handleAutomationRun = () => {
-    if (!automationOption || automationFiles.length === 0) return;
+  const handleAutomationRun = async () => {
+    if (!automationOption || automationFiles.length === 0) {
+      setAutomationStatus('Selecciona una automatización y añade archivos.');
+      return;
+    }
     setAutomationRan(true);
-    setAutomationStatus('Subiendo archivos...');
-    uploadAutomationFiles(automationFiles, { optionId: automationOption.id })
-      .then((result) => {
-        const uploadedCount = Array.isArray(result?.payload?.files) ? result.payload.files.length : automationFiles.length;
-        setAutomationStatus(`Archivos subidos (${uploadedCount}).`);
-      })
-      .catch((error) => {
-        setAutomationStatus(`Error al subir: ${error.message}`);
-      })
-      .finally(() => {
-        setTimeout(() => setAutomationRan(false), 800);
-      });
+    try {
+      setAutomationStatus('Subiendo archivos...');
+      const uploadResult = await uploadAutomationFiles(automationFiles, { optionId: automationOption.id });
+      const uploadedCount = Array.isArray(uploadResult?.payload?.files)
+        ? uploadResult.payload.files.length
+        : automationFiles.length;
+      setAutomationStatus(`Archivos subidos (${uploadedCount}). Lanzando proceso...`);
+
+      const runPath = automationOption.runPath;
+      if (!runPath) {
+        setAutomationStatus('Ruta de ejecución no configurada para esta automatización.');
+        return;
+      }
+
+      await runAutomation(uploadResult.payload, { path: runPath });
+      setAutomationStatus('Proceso lanzado correctamente.');
+    } catch (error) {
+      setAutomationStatus(`Error: ${error.message}`);
+    } finally {
+      setTimeout(() => setAutomationRan(false), 800);
+    }
   };
 
   const handleDrop = (event) => {

@@ -34,6 +34,14 @@ Interfaz React (Vite) para lanzar consultas a FastAPI mediante Action Cards y mo
 - Subida de archivos para Quick Automations: `src/services/automationApi.js` (usa FormData hacia `/v1/automations/upload`)
 - Limpiar chat y entrada: `src/components/MessageInput.jsx`
 
+## Flujo Quick Automations
+- Selecciona la automatización (ej. Contratos SLA) y añade archivos.
+- Pulsar Run:
+  - `POST /v1/automations/upload` con los archivos (`FormData`) → espera un payload `{ automation_id, files: [...] }`.
+  - Se usa ese mismo payload para lanzar la automatización en el endpoint configurado por opción (ej. `/v1/automations/contratos_sla`).
+  - Estados se muestran bajo el botón (subiendo, lanzando, error/exito).
+  - Configura `runPath` en `src/config/options.js` para cada automatización.
+
 ## Añadir nuevas Action Cards con backend
 1) En `src/config/options.js`, añade `request` a la opción:
    ```js

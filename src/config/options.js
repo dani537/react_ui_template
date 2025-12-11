@@ -65,5 +65,5 @@ export const actionTree = [
 export const quickAutomationOptions = [
   { id: 'contabilidad', label: 'Facturas Contabilidad Inversiones' },
   { id: 'transaccionales', label: 'Facturas Op. Transaccionales' },
-  { id: 'contratos', label: 'Contratos SLA' },
+  { id: 'contratos', label: 'Contratos SLA', runPath: '/v1/automations/contratos_sla' },
 ];
