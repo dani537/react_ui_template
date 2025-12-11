@@ -1,6 +1,7 @@
 import { useMemo, useState } from 'react';
 import { actionTree, quickAutomationOptions } from '../config/options.js';
 import { TEXT } from '../config/content.js';
+import { uploadAutomationFiles } from '../services/automationApi.js';
 
 function OptionList({ options, onSelect, selectedId, level, isOpen, onToggle }) {
   const selectedLabel = selectedId ? options.find((o) => o.id === selectedId)?.label : TEXT.selectPlaceholder;
@@ -49,6 +50,7 @@ export default function Sidebar({ onActionRun }) {
   const [automationFiles, setAutomationFiles] = useState([]);
   const [automationDrag, setAutomationDrag] = useState(false);
   const [automationRan, setAutomationRan] = useState(false);
+  const [automationStatus, setAutomationStatus] = useState('');
 
   const level2Options = useMemo(() => level1?.children ?? [], [level1]);
   const level3Options = useMemo(() => level2?.children ?? [], [level2]);
@@ -84,9 +86,20 @@ export default function Sidebar({ onActionRun }) {
   };
 
   const handleAutomationRun = () => {
+    if (!automationOption || automationFiles.length === 0) return;
     setAutomationRan(true);
-    setTimeout(() => setAutomationRan(false), 1200);
-    // Acción de automatización: usar automationOption y automationFiles
+    setAutomationStatus('Subiendo archivos...');
+    uploadAutomationFiles(automationFiles, { optionId: automationOption.id })
+      .then((result) => {
+        const uploadedCount = Array.isArray(result?.payload?.files) ? result.payload.files.length : automationFiles.length;
+        setAutomationStatus(`Archivos subidos (${uploadedCount}).`);
+      })
+      .catch((error) => {
+        setAutomationStatus(`Error al subir: ${error.message}`);
+      })
+      .finally(() => {
+        setTimeout(() => setAutomationRan(false), 800);
+      });
   };
 
   const handleDrop = (event) => {
@@ -268,6 +281,7 @@ export default function Sidebar({ onActionRun }) {
                 {automationRan ? TEXT.runSuccess : TEXT.runLabel}
               </button>
             )}
+            {automationStatus && <p className="muted tiny">{automationStatus}</p>}
           </div>
         </div>
       )}

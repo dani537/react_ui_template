@@ -177,7 +177,7 @@ export default function App() {
     const userMessage = {
       id: crypto.randomUUID(),
       role: 'user',
-      content: `Action Card: ${readablePath}${cleanInput ? ` | unidad: ${cleanInput}` : ''}`,
+      content: `🚀 Has ejecutado la siguiente **Action Card**:\n- Ruta: ${readablePath}${cleanInput ? `\n- Input manual: ${cleanInput}` : ''}`,
     };
     const assistantId = crypto.randomUUID();
 

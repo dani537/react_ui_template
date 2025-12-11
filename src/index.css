@@ -648,7 +648,8 @@ h1 {
   border: 1px solid #e2e8f0;
   background: #f8fafc;
   height: auto;
-  display: inline-block;
+  display: block;
+  margin: 0 auto;
 }
 
 .message-block--file .file-pill--block {

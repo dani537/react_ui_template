@@ -12,7 +12,8 @@ Interfaz React (Vite) para lanzar consultas a FastAPI mediante Action Cards y mo
   ```bash
   echo "VITE_API_BASE_URL=https://api.midominio.com" > .env
   ```
-- Timeout por defecto: `DEFAULT_TIMEOUT_MS` en `src/config/api.js`.
+- Timeout por defecto: `DEFAULT_TIMEOUT_MS` en `src/config/api.js` (300000 ms).
+- Rutas estáticas/imágenes: si el backend devuelve rutas relativas (`/tmp/imagen.png`), el cliente las resolverá con `API_BASE_URL` (ej. `http://localhost:8000/tmp/imagen.png`). Usa URLs absolutas en producción.
 
 ## Flujo de Action Cards (Visión Comercial)
 - Selecciona nivel (Sucursal / DC / Mediador) y escribe la unidad.
@@ -21,7 +22,8 @@ Interfaz React (Vite) para lanzar consultas a FastAPI mediante Action Cards y mo
   - Método: GET
   - Parámetros: `nivel` (según opción), `unidad` (input del usuario)
 - Respuesta:
-  - Si es JSON se formatea y se vuelca al chat junto con endpoint y parámetros usados.
+  - Si el JSON tiene claves `text_*`, `image_*` o `file_*` se renderizan como texto (markdown), imagen o enlace de descarga en el chat.
+  - Para otras respuestas se muestra el contenido formateado.
   - Si falla, el chat muestra el error.
 
 ## Dónde tocar
@@ -29,6 +31,8 @@ Interfaz React (Vite) para lanzar consultas a FastAPI mediante Action Cards y mo
 - Mapeo de opciones y requests: `src/config/options.js`
 - Cliente fetch y formateo: `src/services/actionApi.js`
 - Disparo desde UI (sidebar) y escritura en chat: `src/components/Sidebar.jsx`, `src/App.jsx`
+- Subida de archivos para Quick Automations: `src/services/automationApi.js` (usa FormData hacia `/v1/automations/upload`)
+- Limpiar chat y entrada: `src/components/MessageInput.jsx`
 
 ## Añadir nuevas Action Cards con backend
 1) En `src/config/options.js`, añade `request` a la opción:
